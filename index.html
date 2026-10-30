@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>txt2qr · 文字转二维码</title>
+<meta name="description" content="输入文字或链接，即时生成二维码。本地生成，内容不上传服务器。">
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --card: #ffffff;
+    --ink: #141414;
+    --muted: #6b6b66;
+    --line: #e8e6e0;
+    --input-bg: #fafaf7;
+    --radius: 20px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 32px 20px 48px; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+  .mark {
+    width: 38px; height: 38px; flex: none;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+  }
+  .mark i { background: var(--ink); border-radius: 4px; }
+  .mark i:nth-child(4) { background: transparent; border: 2px solid var(--ink); }
+  .brand { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+  .tagline { color: var(--muted); font-size: 15px; margin: 0 0 28px 52px; }
+  main {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 20px;
+    align-items: start;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: 0 8px 30px rgba(20, 20, 20, 0.05);
+  }
+  label { display: block; font-weight: 600; font-size: 15px; margin-bottom: 10px; }
+  textarea {
+    width: 100%; min-height: 168px; resize: vertical;
+    padding: 14px 16px;
+    border: 1px solid var(--line); border-radius: 14px;
+    background: var(--input-bg); color: var(--ink);
+    font: inherit; font-size: 16px; line-height: 1.7; outline: none;
+  }
+  textarea:focus { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08); }
+  .meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .row { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .row select {
+    flex: 1; min-width: 150px; padding: 11px 12px;
+    border: 1px solid var(--line); border-radius: 999px;
+    background: var(--card); color: var(--ink); font: inherit; font-size: 14px;
+  }
+  button {
+    appearance: none; border: 1px solid var(--ink); cursor: pointer;
+    font: inherit; font-size: 15px; font-weight: 600;
+    padding: 12px 22px; border-radius: 999px;
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .primary { background: var(--ink); color: #fff; }
+  .ghost { background: transparent; color: var(--ink); }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+  .actions button { width: 100%; }
+  .qr-box {
+    background: #fff; border: 1px solid var(--line); border-radius: 16px;
+    padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 320px;
+  }
+  canvas { display: block; width: 100%; max-width: 320px; height: auto; }
+  .placeholder { color: var(--muted); text-align: center; font-size: 14px; }
+  .placeholder span { display: block; font-size: 34px; margin-bottom: 6px; }
+  .status { text-align: center; color: var(--muted); font-size: 13px; margin: 14px 0 0; min-height: 20px; }
+  .status.error { color: #b42318; }
+  .note { color: var(--muted); font-size: 13px; margin-top: 16px; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 28px; }
+  @media (max-width: 760px) {
+    .wrap { padding: 20px 16px 32px; }
+    .tagline { margin-left: 52px; }
+    main { grid-template-columns: 1fr; }
+    .card { padding: 20px; }
+    .qr-box { min-height: 280px; }
+    .actions { grid-template-columns: 1fr; }
+    button { padding: 13px 20px; }
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101010; --card: #1a1a1a; --ink: #f2f2f0;
+      --muted: #a3a3a0; --line: #2b2b2b; --input-bg: #222222;
+    }
+    .card { box-shadow: none; }
+    .primary { background: #f2f2f0; color: #141414; border-color: #f2f2f0; }
+    .mark i { background: var(--ink); }
+    .mark i:nth-child(4) { border-color: var(--ink); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="brand">txt2qr</div>
+  </header>
+  <p class="tagline">输入文字或链接，即时生成二维码。</p>
+
+  <main>
+    <section class="card">
+      <label for="input">输入内容</label>
+      <textarea id="input" placeholder="例如：https://example.com，或一段文字……" maxlength="2000" autofocus></textarea>
+      <div class="meta"><span>支持网址、文本、号码等任意文字</span><span id="count">0 / 2000</span></div>
+      <div class="row">
+        <select id="level" aria-label="纠错级别">
+          <option value="L">纠错级别：低</option>
+          <option value="M" selected>纠错级别：中</option>
+          <option value="Q">纠错级别：较高</option>
+          <option value="H">纠错级别：高</option>
+        </select>
+        <button class="ghost" id="clearBtn" type="button">清空</button>
+      </div>
+      <p class="note">二维码在你的设备上本地生成，输入内容不会上传到任何服务器。</p>
+    </section>
+
+    <section class="card">
+      <div class="qr-box">
+        <div class="placeholder" id="placeholder"><span>▦</span>在这里预览二维码</div>
+        <canvas id="qr" width="1024" height="1024" hidden></canvas>
+      </div>
+      <p class="status" id="status">输入后自动生成</p>
+      <div class="actions">
+        <button class="primary" id="downloadBtn" type="button" disabled>下载 PNG</button>
+        <button class="ghost" id="copyBtn" type="button" disabled>复制图片</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>txt2qr · 打开 index.html 即可使用，兼容电脑与手机</footer>
+</div>
+
+<script src="js/qrcode.min.js"></script>
+<script>
+  var input = document.getElementById('input');
+  var count = document.getElementById('count');
+  var level = document.getElementById('level');
+  var canvas = document.getElementById('qr');
+  var placeholder = document.getElementById('placeholder');
+  var status = document.getElementById('status');
+  var downloadBtn = document.getElementById('downloadBtn');
+  var copyBtn = document.getElementById('copyBtn');
+  var clearBtn = document.getElementById('clearBtn');
+  var timer = null;
+  var hasCode = false;
+
+  function setStatus(text, isError) {
+    status.textContent = text;
+    status.className = isError ? 'status error' : 'status';
+  }
+
+  function render() {
+    var text = input.value;
+    count.textContent = text.length + ' / 2000';
+    if (!text.trim()) {
+      canvas.hidden = true;
+      placeholder.hidden = false;
+      downloadBtn.disabled = true;
+      copyBtn.disabled = true;
+      hasCode = false;
+      setStatus('输入后自动生成', false);
+      return;
+    }
+    QRCode.toCanvas(canvas, text, {
+      errorCorrectionLevel: level.value,
+      width: 1024,
+      margin: 2,
+      color: { dark: '#141414', light: '#ffffff' }
+    }, function (err) {
+      if (err) {
+        setStatus('内容过长，生成失败，请缩短后再试。', true);
+        return;
+      }
+      canvas.hidden = false;
+      placeholder.hidden = true;
+      downloadBtn.disabled = false;
+      copyBtn.disabled = false;
+      hasCode = true;
+      setStatus('已生成 · 可下载或复制', false);
+    });
+  }
+
+  function schedule() {
+    clearTimeout(timer);
+    timer = setTimeout(render, 180);
+  }
+
+  input.addEventListener('input', schedule);
+  level.addEventListener('change', render);
+  clearBtn.addEventListener('click', function () {
+    input.value = '';
+    render();
+    input.focus();
+  });
+
+  downloadBtn.addEventListener('click', function () {
+    if (!hasCode) return;
+    var a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = 'txt2qr.png';
+    a.click();
+  });
+
+  copyBtn.addEventListener('click', function () {
+    if (!hasCode) return;
+    if (!navigator.clipboard || !window.ClipboardItem) {
+      setStatus('当前浏览器不支持复制图片，请改用下载 PNG。', true);
+      return;
+    }
+    canvas.toBlob(function (blob) {
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function () {
+        setStatus('已复制到剪贴板', false);
+      }, function () {
+        setStatus('复制失败，请改用下载 PNG。', true);
+      });
+    }, 'image/png');
+  });
+
+  var preset = new URLSearchParams(location.search).get('text') || new URLSearchParams(location.search).get('q');
+  if (preset) input.value = preset;
+  render();
+</script>
+</body>
+</html>
