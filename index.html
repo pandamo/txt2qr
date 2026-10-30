@@ -9,31 +9,23 @@
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-    background: #fff;
-    color: #141414;
+    background: #000;
+    color: #fff;
     -webkit-font-smoothing: antialiased;
   }
   .wrap { max-width: 480px; margin: 0 auto; padding: 40px 20px; }
-  h1 { margin: 0 0 24px; font-size: 18px; letter-spacing: -0.02em; }
   input {
-    width: 100%; padding: 14px 16px;
-    border: 1px solid #ddd; border-radius: 12px;
+    width: 100%; max-width: 100%; padding: 14px 22px;
+    border: none; border-radius: 999px;
     background: #fff; color: #141414;
     font: inherit; font-size: 16px; outline: none;
   }
-  input:focus { border-color: #141414; }
-  .error { color: #b42318; font-size: 13px; margin: 12px 0 0; }
+  .error { color: #ff6b60; font-size: 13px; margin: 12px 0 0; }
   .qr {
-    margin-top: 24px; width: 100%; aspect-ratio: 1 / 1;
-    border: 1px solid #eee; border-radius: 16px; overflow: hidden;
+    margin-top: 24px; width: 100%; max-width: 100%; aspect-ratio: 1 / 1;
+    border-radius: 16px; overflow: hidden;
   }
-  canvas { display: block; width: 100%; aspect-ratio: 1 / 1; height: auto; }
-  button {
-    display: block; margin: 20px auto 0;
-    background: #141414; color: #fff; border: none; cursor: pointer;
-    font: inherit; font-size: 15px; font-weight: 600;
-    padding: 12px 28px; border-radius: 999px;
-  }
+  canvas { display: block; width: 100%; max-width: 100%; aspect-ratio: 1 / 1; height: auto; }
   @media (max-width: 480px) {
     .wrap { padding: 24px 16px; }
   }
@@ -41,13 +33,11 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>txt2qr</h1>
   <input id="input" type="text" placeholder="输入文字或链接" maxlength="2000" autofocus>
   <p class="error" id="error" hidden></p>
   <div class="qr">
-    <canvas id="qr" width="1024" height="1024" hidden></canvas>
+    <canvas id="qr" hidden></canvas>
   </div>
-  <button id="downloadBtn" type="button" hidden>下载 PNG</button>
 </div>
 
 <script src="js/qrcode.min.js"></script>
@@ -62,17 +52,13 @@
   var input = document.getElementById('input');
   var canvas = document.getElementById('qr');
   var error = document.getElementById('error');
-  var downloadBtn = document.getElementById('downloadBtn');
   var timer = null;
-  var hasCode = false;
 
   function render() {
     var text = input.value;
     if (!text.trim()) {
       canvas.hidden = true;
-      downloadBtn.hidden = true;
       error.hidden = true;
-      hasCode = false;
       return;
     }
     QRCode.toCanvas(canvas, text, {
@@ -88,22 +74,12 @@
       }
       error.hidden = true;
       canvas.hidden = false;
-      downloadBtn.hidden = false;
-      hasCode = true;
     });
   }
 
   input.addEventListener('input', function () {
     clearTimeout(timer);
     timer = setTimeout(render, 180);
-  });
-
-  downloadBtn.addEventListener('click', function () {
-    if (!hasCode) return;
-    var a = document.createElement('a');
-    a.href = canvas.toDataURL('image/png');
-    a.download = 'txt2qr.png';
-    a.click();
   });
 
   var preset = new URLSearchParams(location.search).get('text') || new URLSearchParams(location.search).get('q');
