@@ -25,7 +25,7 @@
     margin-top: 24px; width: 100%; max-width: 100%; aspect-ratio: 1 / 1;
     border-radius: 16px; overflow: hidden;
   }
-  canvas { display: block; width: 100%; max-width: 100%; aspect-ratio: 1 / 1; height: auto; }
+  canvas { display: block; width: 100%; max-width: 100%; height: 100%; }
   @media (max-width: 480px) {
     .wrap { padding: 24px 16px; }
   }
@@ -74,6 +74,10 @@
       }
       error.hidden = true;
       canvas.hidden = false;
+      // 库生成时会把 canvas 内联样式写成 1024px，盖掉 CSS，造成手机端溢出；
+      // 这里生成完立即改回 100%，显示尺寸跟随容器，画布本身的 1024 分辨率不受影响
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
     });
   }
 
