@@ -33,7 +33,7 @@
 </head>
 <body>
 <div class="wrap">
-  <input id="input" type="text" placeholder="输入文字或链接" maxlength="2000" autofocus>
+  <input id="input" type="search" placeholder="输入文字或链接" maxlength="2000" autofocus>
   <p class="error" id="error" hidden></p>
   <div class="qr">
     <canvas id="qr" hidden></canvas>
@@ -81,6 +81,9 @@
     clearTimeout(timer);
     timer = setTimeout(render, 180);
   });
+
+  // 原生清除按钮点按时也立即刷新（部分浏览器只触发 search 事件）
+  input.addEventListener('search', render);
 
   var preset = new URLSearchParams(location.search).get('text') || new URLSearchParams(location.search).get('q');
   if (preset) input.value = preset;
